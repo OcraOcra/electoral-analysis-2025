@@ -1,0 +1,237 @@
+---
+title: "trabajo_en_clase_05/25/2025"
+author: "Marco Artavia Pacheco C4L354"
+date: "2025-09-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Contexto previo 
+Este trabajo es respecto al ANOVA, comparacion de medias entre 3 o mas grupos. Se ha realizado con procesos manuales en la busqueda de tener mayor control de la lógica detrás y ganar más manejo de las funciones. Se busca  evaluar si existen diferencias significativas en el promedio de votación por distrito. 
+
+# Pregunta Inicial: ¿Cuál partido político va ganando la elección a esta hora del día? 
+
+# Inicio
+Paquetes y asignacion de datos. Parte rutinaria 
+
+```{r}
+library(dplyr)
+library(haven)
+setwd("G:/My Drive/Universidad/R/Cuanti II/Septiembre 25")
+datos<- read.csv("MuestrasDistritos_VotosPartido2014.csv", sep = ";")
+head(datos)
+```
+
+# Paso 1
+Calcular la media para cada grupo
+La media representa el valor promedio de votación por distrito para cada partido. Se calcula dividiendo la suma total de votos por el número de observaciones (distritos):
+```{r}
+prom_PLN<- mean(datos$PLN)
+prom_PLN
+
+prom_PAC<- mean(datos$PAC)
+prom_PAC
+
+prom_PUSC<- mean(datos$PUSC)
+prom_PUSC
+
+prom_FA<- mean(datos$FA)
+prom_FA
+
+prom_ML<- mean(datos$ML)
+prom_ML
+```
+
+# Paso 2
+Obtención inicial de datos para la posterior creación de la suma de los cuadrados. 
+N Total (Ajuste en base a ciertas columnas, pues no se utilizan todas)
+
+```{r}
+ncol(datos)
+N_total <- nrow(datos) * ncol(datos[5:9])
+N_total
+```
+
+# Paso 2.1 
+Obtención inicial de datos para la posterior creación de la suma de los cuadrados. 
+Datos elevados
+```{r}
+
+datos$PLN_Cuad <- datos$PLN^2
+
+datos$PAC_Cuad <- datos$PAC^2
+
+datos$PUSC_Cuad <- datos$PUSC^2
+
+datos$FA_Cuad <- datos$FA^2
+
+datos$ML_Cuad <- datos$ML^2
+head(datos)
+
+```
+
+# Paso 3
+Suma total de los cuadrados (SC_total)
+Este valor refleja la variabilidad total en los datos, sin distinguir entre fuentes de variación
+```{r}
+SC_total <- (sum(datos$PLN_Cuad) + sum(datos$PAC_Cuad) + sum(datos$PUSC_Cuad) + sum(datos$FA_Cuad) + sum(datos$ML_Cuad)) -
+  (sum(datos$PLN) + sum(datos$PAC) + sum(datos$PUSC) + sum(datos$FA) + sum(datos$ML))^2 / N_total
+
+SC_total
+
+
+```
+
+# Paso 4
+Suma de cuadrados entre los grupos (SC_entre)
+Esta medida captura la variabilidad debida a las diferencias entre los grupos (partidos)
+```{r}
+#comprobación rápida
+N <- nrow(datos)
+N
+
+#Suma de cuadrados entre los grupos (SC_entre)
+SC_Entr <- (sum(datos$PLN)^2/N + sum(datos$PAC)^2/N + sum(datos$PUSC)^2/N + sum(datos$FA)^2/N + sum(datos$ML)^2/N) -
+  ((sum(datos$PLN) + sum(datos$PAC) + sum(datos$PUSC)+ sum(datos$FA) + sum(datos$ML))^2 / N_total)
+SC_Entr
+```
+
+# Paso 5
+Suma de cuadrados dentro de los grupos (SC_dentro)
+Refleja la variabilidad interna de cada grupo, es decir, qué tan dispersos están los datos dentro de cada partido:
+SC dentro
+```{r}
+SC_dentr <- SC_total - SC_Entr
+SC_dentr
+```
+
+# Paso 6 
+Grados de libertad entre grupos
+Representa la cantidad de grupos menos uno
+```{r}
+gl_entr <- 5 - 1
+gl_entr
+```
+
+# Paso 7 
+Grados de libertad dentro de los grupos
+Representa el total de observaciones menos el número de grupos
+```{r}
+gl_dentr <- N_total - 5
+gl_dentr
+```
+
+# Paso 8 
+Media cuadrática entre grupos
+Es el promedio de la variabilidad entre grupos
+```{r}
+medCuad_entr <- SC_Entr / gl_entr
+medCuad_entr
+```
+
+# Paso 9 
+Media cuadrática dentro de los grupos
+Es el promedio de la variabilidad interna:
+```{r}
+medCuad_dentr <- SC_dentr / gl_dentr
+medCuad_dentr 
+```
+
+# Paso 10 
+Razón F
+La razón F permite evaluar si las diferencias entre grupos son mayores que la variabilidad interna 
+```{r}
+razonF_exp <- medCuad_entr / medCuad_dentr
+razonF_exp
+```
+
+# Paso 11 (Sin proceso en R)
+Se obtiene la F Teorica con la Tabla del libro de levin lo cual nos da 2.77
+
+Se compara el valor F obtenido con el valor crítico de la tabla F de Fisher para un nivel de significancia (por ejemplo, α=0.05\alpha = 0.05):
+
+Si F_experimental > F_teórica -> se rechaza H0
+Se usan los grados de libertad gl_entr y gl_dentr para buscar valor en la tabla
+
+
+## Paso 12 
+Determinar diferencias entre medias
+Se calculan las diferencias entre medias con todas las combinaciones posibles de grupos
+
+```{r}
+# PLN y PAC H0
+Dif_PLN_PAC <- prom_PLN - prom_PAC
+Dif_PLN_PAC
+
+# PLN y PUSC H1
+Dif_PLN_PUSC <- prom_PLN - prom_PUSC
+Dif_PLN_PUSC
+
+# PLN y FA H1
+Dif_PLN_FA <- prom_PLN - prom_FA
+Dif_PLN_FA
+
+# PLN y ML H1
+Dif_PLN_ML <- prom_PLN - prom_ML
+Dif_PLN_ML
+
+# PAC y PUSC H1
+Dif_PAC_PUSC <- prom_PAC - prom_PUSC
+Dif_PAC_PUSC
+
+# PAC y FA H1
+Dif_PAC_FA <- prom_PAC - prom_FA
+Dif_PAC_FA
+
+# PAC y ML H1
+Dif_PAC_ML <- prom_PAC - prom_ML
+Dif_PAC_ML
+
+# PUSC y FA H0
+Dif_PUSC_FA <- prom_PUSC - prom_FA
+Dif_PUSC_FA
+
+# PUSC y ML H0
+Dif_PUSC_ML <- prom_PUSC - prom_ML
+Dif_PUSC_ML
+
+# FA y ML H1 
+Dif_FA_ML <- prom_FA - prom_ML
+Dif_FA_ML
+```
+
+# Paso 13 (Sin Proceso en R)
+Determinar el valor q alpha 
+Se consulta la tabla del rango student (Levin, 1999) usando
+
+gl_dentr
+Número de grupos -> K 
+Nivel de confianza (0.05)
+Este valor se usa para calcular la DSH.
+
+## Paso 14
+Calcular la DSH de Tukey
+La Diferencia Significativa Honesta se calcula así
+```{r}
+DSH <- 3.86*sqrt(medCuad_dentr / N)
+DSH
+```
+
+## Paso 15 (Sin Proceso en R)
+Comparar DSH con las diferencias de medias
+Se evalúa cada diferencia:
+Si diferencia > DSH -> diferencia significativa
+Si diferencia < DSH -> no significativa 
+
+Esto permite identificar entre qué partidos hay diferencias reales en el promedio de votación.
+
+
+Tomando en cuenta que el DSH es 277.9639, solo se tiene que revisar con los resultados del Paso 12
+
+## Interpretación Final: 
+
+El análisis confirma que sí existen diferencias significativas en los promedios de votación por distrito entre varios de los partidos políticos que compiten en la elección presidencial. Las diferencias significativas se presentan entre el PLN y PUSC, PLN y FA, PLN y ML, PAC y PUSC, PAC y FA, PAC y ML, y entre FA y ML. En cambio, no se observan diferencias significativas entre el PLN y PAC, PUSC y FA, ni entre el PUSC y ML. A esta hora del día, el partido PAC muestra el promedio de votación más alto por distrito, lo que lo posiciona como el más favorecido en este avance.
+
